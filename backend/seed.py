@@ -14,10 +14,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent          # backend/
+PROJETO_DIR = BASE_DIR.parent                       # raiz do projeto
 os.chdir(str(BASE_DIR))
 
-load_dotenv(BASE_DIR / ".env", override=False)
+load_dotenv(PROJETO_DIR / ".env", override=False, encoding="utf-8-sig")
 
 import sys  # noqa: E402
 
@@ -42,6 +43,7 @@ try:
     username = os.getenv("ADMIN_USERNAME", "admin")
     senha = os.getenv("ADMIN_PASSWORD")
     gerada = False
+    senha_explicita = bool(senha)
     if not senha:
         alfabeto = string.ascii_letters + string.digits + "!@#$%&*"
         senha = "".join(secrets.choice(alfabeto) for _ in range(16))
@@ -60,7 +62,14 @@ try:
         db.commit()
         print(f"[EducaFlow] Usuario administrador criado: {username}")
     else:
-        print(f"[EducaFlow] Usuario administrador ja existe: {username}")
+        from app.core.security import verify_password
+
+        if senha_explicita and not verify_password(senha, usuario.senha_hash):
+            usuario.senha_hash = hash_password(senha)
+            db.commit()
+            print(f"[EducaFlow] Senha do administrador sincronizada com o arquivo .env.")
+        else:
+            print(f"[EducaFlow] Usuario administrador ja existe: {username}")
 
     print(f"[EducaFlow] Login: {username}")
     print(f"[EducaFlow] Senha: {senha}")

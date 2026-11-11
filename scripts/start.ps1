@@ -12,6 +12,8 @@ $backend = Join-Path $projetoDir "backend"
 $venvPython = Join-Path $projetoDir ".venv\Scripts\python.exe"
 $envFile = Join-Path $projetoDir ".env"
 $pidFile = Join-Path $projetoDir "data\server.pid"
+$logFile = Join-Path $projetoDir "data\server.log"
+$errLogFile = Join-Path $projetoDir "data\server.error.log"
 $porta = 8000
 $url = "http://127.0.0.1:$porta"
 
@@ -57,29 +59,59 @@ function AplicarMigrações() {
 
 function GarantirAdministrador() {
     Write-Host "Garantindo usuario administrador..." -ForegroundColor Yellow
-    & $venvPython "$backend\seed.py" 2>&1 | Out-Null
+    $saida = & $venvPython "$backend\seed.py" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ($saida | Out-String) -ForegroundColor Red
+        Write-Error "Falha ao garantir o usuario administrador." -Category OperationStopped
+    }
     Write-Host "Administrador verificado." -ForegroundColor Green
 }
 
 function IniciarServidor() {
     Write-Host "Iniciando o servidor FastAPI (Uvicorn)..." -ForegroundColor Yellow
+    Remove-Item $logFile, $errLogFile -ErrorAction SilentlyContinue
     Push-Location $backend
-    $processo = Start-Process $venvPython -ArgumentList "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", $porta -PassThru -WindowStyle Hidden
+    $processo = Start-Process $venvPython -ArgumentList "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", $porta -PassThru -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError $errLogFile
     Pop-Location
 
-    # Salva o PID para o stop.ps1
-    $processo.Id | Out-File -FilePath $pidFile -Encoding UTF8
+    # Salva o PID para o stop.ps1 (sem BOM)
+    [System.IO.File]::WriteAllText($pidFile, [string]$processo.Id, (New-Object System.Text.UTF8Encoding($false)))
 
     Write-Host "Servidor iniciado (PID $($processo.Id))." -ForegroundColor Green
     return $processo
+}
+
+function MostrarLogServidor() {
+    $exibido = $false
+    foreach ($arquivo in @($logFile, $errLogFile)) {
+        if (Test-Path $arquivo) {
+            $conteudo = Get-Content $arquivo -ErrorAction SilentlyContinue
+            if ($conteudo) {
+                if (-not $exibido) {
+                    Write-Host ""
+                    Write-Host "--- Log do servidor ---" -ForegroundColor Yellow
+                    $exibido = $true
+                }
+                $conteudo | ForEach-Object { Write-Host $_ -ForegroundColor DarkGray }
+            }
+        }
+    }
+    if ($exibido) {
+        Write-Host "---------------------" -ForegroundColor Yellow
+    }
 }
 
 function AguardarServidor([int]$segundos = 30) {
     Write-Host "Aguardando o servidor ficar disponível em $url ..." -ForegroundColor Yellow
     $inicio = Get-Date
     while ((Get-Date) - $inicio -lt (New-TimeSpan -Seconds $segundos)) {
+        if ($script:processoServidor -and $script:processoServidor.HasExited) {
+            Write-Host "O processo do servidor encerrou durante a inicializacao." -ForegroundColor Red
+            MostrarLogServidor
+            return $false
+        }
         try {
-            $resposta = Invoke-RestMethod -Uri "$url/" -Method Get -TimeoutSec 2 -ErrorAction Stop
+            $resposta = Invoke-RestMethod -Uri "$url/status" -Method Get -TimeoutSec 2 -ErrorAction Stop
             if ($resposta) {
                 Write-Host "Servidor online em $url" -ForegroundColor Green
                 return $true
@@ -87,7 +119,7 @@ function AguardarServidor([int]$segundos = 30) {
         } catch {
             # ainda nao esta pronto
         }
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds 1
     }
     return $false
 }
@@ -105,7 +137,7 @@ try {
     VerificarInstalacao
 
     if (Test-Path $pidFile) {
-        $pidAntigo = Get-Content $pidFile -ErrorAction SilentlyContinue
+        $pidAntigo = (Get-Content $pidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
         if ($pidAntigo) {
             try { Stop-Process -Id $pidAntigo -Force -ErrorAction Stop } catch { }
         }
@@ -126,6 +158,7 @@ try {
     AplicarMigrações
     GarantirAdministrador
     $proc = IniciarServidor
+    $script:processoServidor = $proc
     $online = AguardarServidor
     if ($online) {
         AbrirNavegador
@@ -139,7 +172,12 @@ try {
         Write-Host "========================================" -ForegroundColor Green
         Write-Host ""
     } else {
-        Write-Host "O servidor pode estar demorando para iniciar. Acesse manualmente: $url" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "FALHA AO INICIAR O SERVIDOR." -ForegroundColor Red
+        MostrarLogServidor
+        Write-Host "Verifique o log em: $logFile" -ForegroundColor Yellow
+        Write-Host ""
+        exit 1
     }
 
     Write-Host ""

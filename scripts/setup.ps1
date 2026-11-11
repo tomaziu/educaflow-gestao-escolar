@@ -123,7 +123,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES=10080
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=$senhaAdmin
 "@
-    Set-Content -Path $envFile -Value $conteudo -Encoding UTF8
+    # Grava sem BOM UTF-8 para que o pydantic-settings/dotenv leiam as variaveis corretamente
+    [System.IO.File]::WriteAllText($envFile, $conteudo, (New-Object System.Text.UTF8Encoding($false)))
 
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "  CREDENCIAIS DO ADMINISTRADOR INICIAL   " -ForegroundColor Cyan

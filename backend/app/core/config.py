@@ -6,8 +6,9 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings
 
 _aqui = os.path.dirname(os.path.abspath(__file__))           # backend/app/core
-_backend = os.path.dirname(_aqui)                             # backend
-_projeto = os.path.dirname(_backend)                          # raiz do projeto
+_app = os.path.dirname(_aqui)                                # backend/app
+_backend = os.path.dirname(_app)                             # backend
+_projeto = os.path.dirname(_backend)                         # raiz do projeto
 _ENV_FILE = os.path.join(_projeto, ".env")
 
 
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = _ENV_FILE
-        env_file_encoding = "utf-8"
+        env_file_encoding = "utf-8-sig"
 
 
 @lru_cache

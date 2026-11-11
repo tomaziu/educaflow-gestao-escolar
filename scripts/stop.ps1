@@ -21,38 +21,35 @@ function EncerrarPid() {
         Write-Host "Nenhum arquivo de PID do servidor encontrado." -ForegroundColor Yellow
         return $false
     }
-    $pid = Get-Content $pidFile -ErrorAction SilentlyContinue
-    if (-not $pid) {
+    $pidServidor = (Get-Content $pidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    if (-not $pidServidor) {
         Remove-Item $pidFile -ErrorAction SilentlyContinue
         Write-Host "PID invalido. Arquivo removido." -ForegroundColor Yellow
         return $false
     }
     try {
-        Stop-Process -Id $pid -Force -ErrorAction Stop
-        Write-Host "Servidor (PID $pid) encerrado com sucesso." -ForegroundColor Green
+        Stop-Process -Id $pidServidor -Force -ErrorAction Stop
+        Write-Host "Servidor (PID $pidServidor) encerrado com sucesso." -ForegroundColor Green
         Remove-Item $pidFile -ErrorAction SilentlyContinue
         return $true
     } catch {
-        Write-Host "Nao foi possivel encerrar o PID $pid (processo pode ja estar encerrado)." -ForegroundColor Yellow
+        Write-Host "Nao foi possivel encerrar o PID $pidServidor (processo pode ja estar encerrado)." -ForegroundColor Yellow
         Remove-Item $pidFile -ErrorAction SilentlyContinue
         return $false
     }
 }
 
 function EncerrarPorNome() {
-    # Fallback: tenta encerrar processos python que estejam rodando o uvicorn da app
-    $processos = Get-Process python -ErrorAction SilentlyContinue | Where-Object {
-        $_.Path -and $_.Path -like "*python*"
+    # Fallback: encerra processos python que estejam rodando o uvicorn da app
+    $processos = Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -like "*uvicorn*app.main:app*"
     }
     $encerrados = 0
     foreach ($p in $processos) {
         try {
-            $cmdline = (Get-Process -Id $p.Id).CommandLine 2>$null
-            if ($cmdline -like "*uvicorn*app.main:app*") {
-                Stop-Process -Id $p.Id -Force -ErrorAction Stop
-                Write-Host "Processo uvicorn encerrado (PID $($p.Id))." -ForegroundColor Green
-                $encerrados++
-            }
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop
+            Write-Host "Processo uvicorn encerrado (PID $($p.ProcessId))." -ForegroundColor Green
+            $encerrados++
         } catch {
             # ignora
         }
