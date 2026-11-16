@@ -1,0 +1,43 @@
+# EducaFlow - .gitignore
+
+# Ambiente virtual Python
+.venv/
+venv/
+env/
+ENV/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Banco de dados e dados locais
+data/*.db
+data/*.db.*
+data/server.pid
+data/uvicorn.out
+data/uvicorn.err
+*.sqlite
+*.db3
+
+# Backups
+backups/*.db
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Temp / builds
+*.tmp
+*.bak
