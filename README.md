@@ -78,6 +78,118 @@ O instalador (`setup.ps1`) baixa e configura sozinho:
 - Ambiente virtual (`.venv`)
 - Todas as bibliotecas listadas em `requirements.txt` (FastAPI, Uvicorn, SQLAlchemy, Alembic, etc.)
 
+> **Instalação manual**: Se preferir não usar os scripts automáticos, veja a seção **[Instalação Manual](#instalação-manual)** abaixo.
+
+---
+
+## Instalação Manual
+
+Se preferir configurar o projeto manualmente sem usar os scripts automatizados:
+
+### Passo 1: Preparar o ambiente
+
+1. Baixe o projeto como ZIP ou clone o repositório
+2. Extraia em uma pasta (exemplo: `C:\EducaFlow`)
+3. Abra o **PowerShell** (não precisa ser administrador)
+
+### Passo 2: Instalar Python (se necessário)
+
+Execute no PowerShell:
+```powershell
+# Verifica se Python já está instalado
+python --version
+
+# Se não estiver instalado, instale via winget:
+winget install Python.Python.3.12
+```
+
+### Passo 3: Criar o ambiente virtual
+
+Na pasta do projeto, execute:
+```powershell
+python -m venv .venv
+```
+
+### Passo 4: Ativar o ambiente virtual
+
+```powershell
+# No Windows:
+.\.venv\Scripts\Activate.ps1
+
+# Se der erro de permissão:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+.\.venv\Scripts\Activate.ps1
+```
+
+### Passo 5: Instalar as dependências
+
+```powershell
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Passo 6: Configurar variáveis de ambiente
+
+Copie o arquivo de exemplo:
+```powershell
+copy .env.example .env
+```
+
+Edite o arquivo `.env` se necessário. Por padrão, o sistema usa:
+- Database: SQLite em `data/educaflow.db`
+- Usuário admin: `admin`
+- Senha: serão geradas durante a migração
+
+### Passo 7: Executar migrações do banco de dados
+
+```powershell
+# Criar diretório de dados
+mkdir data
+
+# Executar migrações (cria as tabelas)
+.\.venv\Scripts\python.exe -m alembic upgrade head
+
+# Criar usuário administrador (execute após migração)
+.\.venv\Scripts\python.exe -c "
+import sys
+sys.path.insert(0, 'backend')
+from app.services.auth import criar_usuario_admin
+from app.database import SessionLocal
+db = SessionLocal()
+usuario = criar_usuario_admin(db)
+print(f'Usuário criado: {usuario.username}')
+db.close()
+"
+```
+
+### Passo 8: Iniciar o servidor
+
+```powershell
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Acesse em: http://127.0.0.1:8000
+
+---
+
+## 3. Instalação
+
+### Sistemas operacionais compatíveis
+- Windows 10 64 bits
+- Windows 11 64 bits
+
+### Requisitos mínimos do computador
+- Processador: 1 GHz ou superior
+- Memória RAM: 2 GB (recomendado 4 GB)
+- Espaço em disco: cerca de 500 MB (incluindo o Python e as bibliotecas)
+- Conexão com a internet apenas para a primeira instalação (download do Python e das bibliotecas, se necessário)
+
+### Dependências instaladas automaticamente
+O instalador (`setup.ps1`) baixa e configura sozinho:
+- Python (caso não esteja instalado)
+- Ambiente virtual (`.venv`)
+- Todas as bibliotecas listadas em `requirements.txt` (FastAPI, Uvicorn, SQLAlchemy, Alembic, etc.)
+
 Não é necessário instalar nada manualmente.
 
 ---
