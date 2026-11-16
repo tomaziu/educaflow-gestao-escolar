@@ -146,11 +146,11 @@ function PrepararBanco() {
 
     # Marca o Alembic como aplicado (head) pois as tabelas ja foram criadas pelo seed
     Write-Host "Sincronizando controle de migracoes (Alembic)..." -ForegroundColor Yellow
-    $alembicExe = Join-Path $venv "Scripts\alembic.exe"
+    $venvPython = Join-Path $venv "Scripts\python.exe"
     Push-Location $backend
     $ep = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    & $alembicExe stamp head > $null 2>&1
+    & $venvPython -m alembic stamp head > $null 2>&1
     $ErrorActionPreference = $ep
     Pop-Location
     if ($LASTEXITCODE -ne 0) {

@@ -156,7 +156,7 @@ if errorlevel 1 (
 )
 
 echo Sincronizando migracoes (Alembic)...
-"%VENV%\Scripts\alembic.exe" stamp head >nul 2>&1
+"%VENV_PYTHON%" -m alembic stamp head >nul 2>&1
 if errorlevel 1 (
     echo ERRO: Falha ao sincronizar migracoes.
     exit /b 1
