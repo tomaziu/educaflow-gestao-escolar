@@ -82,8 +82,8 @@ REM Instalar dependencias
 call :escrever_etapa "Instalando dependencias"
 echo Atualizando pip...
 "%VENV_PYTHON%" -m pip install --upgrade pip >nul 2>&1
-echo Instalando dependencias...
-"%VENV_PYTHON%" -m pip install -r "%REQ_BACKEND%"
+echo Instalando dependencias (usando wheels pre-compilados)...
+"%VENV_PYTHON%" -m pip install --only-binary :all: -r "%REQ_BACKEND%"
 if errorlevel 1 (
     echo ERRO: Falha ao instalar as dependencias.
     exit /b 1

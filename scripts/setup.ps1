@@ -79,7 +79,7 @@ function InstalarDependencias() {
     Write-Host "  Pip verificado." -ForegroundColor Green
 
     Write-Host "Instalando dependencias no ambiente virtual (pode demorar alguns minutos)..." -ForegroundColor Yellow
-    & $venvPython -m pip install -r $reqBackend
+    & $venvPython -m pip install --only-binary :all: -r $reqBackend
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Falha ao instalar as dependencias. Verifique sua conexao com a internet." -Category OperationStopped
     }
