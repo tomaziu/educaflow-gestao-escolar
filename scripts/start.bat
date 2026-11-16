@@ -66,7 +66,7 @@ if exist "%PID_FILE%" (
 REM Aplicar migracoes (Alembic)
 echo Aplicando migracoes pendentes - Alembic
 pushd "%BACKEND%"
-"%PROJ_DIR%\.venv\Scripts\alembic.exe" upgrade head >nul 2>&1
+"%VENV_PYTHON%" -m alembic upgrade head >nul 2>&1
 if errorlevel 1 (
     echo ERRO: Falha ao aplicar as migracoes - Alembic
     popd

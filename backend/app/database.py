@@ -13,12 +13,16 @@ from app.models.base import Base
 _db_url = settings.DATABASE_URL
 if _db_url.startswith("sqlite:///"):
     _relativo = _db_url[len("sqlite:///"):]
-    if not os.path.isabs(_relativo):
+    # Se já é caminho absoluto, só normaliza as barras
+    if os.path.isabs(_relativo):
+        _relativo = _relativo.replace("\\", "/")
+    else:
+        # Se é relativo, resolve a partir da raiz do projeto
         _aqui = os.path.dirname(os.path.abspath(__file__))          # backend/app
         _backend = os.path.dirname(_aqui)                            # backend
         _projeto = os.path.dirname(_backend)                         # raiz do projeto
         _relativo = os.path.join(_projeto, _relativo).replace("\\", "/")
-        _db_url = "sqlite:///" + _relativo
+    _db_url = "sqlite:///" + _relativo
 
 engine = create_engine(
     _db_url,

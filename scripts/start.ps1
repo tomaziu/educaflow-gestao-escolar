@@ -44,11 +44,11 @@ function PortaOcupada([int]$p) {
 
 function AplicarMigrações() {
     Write-Host "Aplicando migracoes pendentes (Alembic)..." -ForegroundColor Yellow
-    $alembicExe = Join-Path $projetoDir ".venv\Scripts\alembic.exe"
+    $venvPython = Join-Path $projetoDir ".venv\Scripts\python.exe"
     Push-Location $backend
     $ep = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    & $alembicExe upgrade head > $null 2>&1
+    & $venvPython -m alembic upgrade head > $null 2>&1
     $ErrorActionPreference = $ep
     Pop-Location
     if ($LASTEXITCODE -ne 0) {
